@@ -1,0 +1,40 @@
+name: school-admission
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: school_admission
+      POSTGRES_USER: admission
+      POSTGRES_PASSWORD: admission
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admission -d school_admission"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: ${DB_CONNECTION_STRING:-Host=db;Port=5432;Database=school_admission;Username=admission;Password=admission}
+      HOLD_DURATION_SECONDS: ${HOLD_DURATION_SECONDS:-600}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres-data:
