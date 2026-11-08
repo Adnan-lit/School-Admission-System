@@ -12,7 +12,11 @@ public sealed class ApiCollection : ICollectionFixture<ApiFixture>;
 
 public sealed record CreatedClass(string Id, string Name, int TotalSeats);
 
+public sealed record CreatedHold(string HoldId);
+
 public sealed record ClassSeats(int TotalSeats, int HeldSeats, int ConfirmedSeats, int AvailableSeats);
+
+public sealed record MyHold(string HoldId, string ClassId, string ClassName, string Status, string ExpiresAt);
 
 /// <summary>Small wrapper so tests read as what a client does.</summary>
 public sealed class AdmissionClient(HttpClient http)
@@ -20,6 +24,9 @@ public sealed class AdmissionClient(HttpClient http)
     public const string StudentIdHeader = "X-Student-Id";
 
     public static string StudentId(int number) => number.ToString("D17");
+
+    /// <summary>For tests that list a student's holds, where IDs must not repeat between test runs.</summary>
+    public static string NewStudentId() => Random.Shared.NextInt64(10_000_000_000_000_000, 99_999_999_999_999_999).ToString();
 
     public async Task<string> CreateClassAsync(int totalSeats)
     {
@@ -29,16 +36,27 @@ public sealed class AdmissionClient(HttpClient http)
         return created!.Id;
     }
 
-    public Task<HttpResponseMessage> ApplyAsync(string classId, string? studentId)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/classes/{classId}/holds");
-        if (studentId is not null)
-        {
-            request.Headers.TryAddWithoutValidation(StudentIdHeader, studentId);
-        }
+    public Task<HttpResponseMessage> ApplyAsync(string classId, string? studentId) =>
+        SendAsStudentAsync(HttpMethod.Post, $"/classes/{classId}/holds", studentId);
 
-        return http.SendAsync(request);
+    public async Task<string> ApplyForHoldIdAsync(string classId, string studentId)
+    {
+        var response = await ApplyAsync(classId, studentId);
+        response.EnsureSuccessStatusCode();
+        var hold = await response.Content.ReadFromJsonAsync<CreatedHold>();
+        return hold!.HoldId;
     }
+
+    public Task<HttpResponseMessage> GetHoldAsync(string holdId) => http.GetAsync($"/holds/{holdId}");
+
+    public Task<HttpResponseMessage> ConfirmAsync(string holdId, string? studentId) =>
+        SendAsStudentAsync(HttpMethod.Post, $"/holds/{holdId}/confirm", studentId);
+
+    public Task<HttpResponseMessage> CancelAsync(string holdId, string? studentId) =>
+        SendAsStudentAsync(HttpMethod.Delete, $"/holds/{holdId}", studentId);
+
+    public Task<HttpResponseMessage> GetMyHoldsAsync(string? studentId) =>
+        SendAsStudentAsync(HttpMethod.Get, "/me/holds", studentId);
 
     public async Task<ClassSeats> GetSeatsAsync(string classId) =>
         (await http.GetFromJsonAsync<ClassSeats>($"/classes/{classId}"))!;
@@ -60,5 +78,16 @@ public sealed class AdmissionClient(HttpClient http)
 
         startSignal.SetResult();
         return await Task.WhenAll(requests);
+    }
+
+    private Task<HttpResponseMessage> SendAsStudentAsync(HttpMethod method, string path, string? studentId)
+    {
+        var request = new HttpRequestMessage(method, path);
+        if (studentId is not null)
+        {
+            request.Headers.TryAddWithoutValidation(StudentIdHeader, studentId);
+        }
+
+        return http.SendAsync(request);
     }
 }

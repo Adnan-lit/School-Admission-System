@@ -1,6 +1,9 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SchoolAdmission.Api.Contracts;
 using SchoolAdmission.Api.Data;
+using SchoolAdmission.Api.Models;
 using SchoolAdmission.Api.Options;
 
 namespace SchoolAdmission.Api.Services;
@@ -14,6 +17,16 @@ public enum ApplyOutcome
 }
 
 public sealed record ApplyResult(ApplyOutcome Outcome, Guid HoldId = default, DateTime ExpiresAt = default);
+
+public enum HoldActionOutcome
+{
+    Succeeded,
+    NotFound,
+    NotOwner,
+    Expired,
+    Cancelled,
+    Confirmed,
+}
 
 public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions)
 {
@@ -88,6 +101,100 @@ public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions)
         return new ApplyResult(ApplyOutcome.Created, holdId, expiresAt[0]);
     }
 
+    public async Task<HoldActionOutcome> ConfirmAsync(Guid holdId, string studentId, CancellationToken cancellationToken)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        var hold = await LockHoldAsync(holdId, cancellationToken);
+        if (hold is null)
+        {
+            return HoldActionOutcome.NotFound;
+        }
+
+        if (hold.StudentId != studentId)
+        {
+            return HoldActionOutcome.NotOwner;
+        }
+
+        switch (hold.CurrentStatus)
+        {
+            case HoldStatus.Held:
+                await db.Database.ExecuteSqlAsync(
+                    $"UPDATE holds SET status = 'CONFIRMED', confirmed_at = clock_timestamp() WHERE id = {holdId}",
+                    cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return HoldActionOutcome.Succeeded;
+
+            // A repeated confirm is a retry of something that already worked, so nothing changes.
+            case HoldStatus.Confirmed:
+                return HoldActionOutcome.Succeeded;
+
+            case HoldStatus.Cancelled:
+                return HoldActionOutcome.Cancelled;
+
+            default:
+                return HoldActionOutcome.Expired;
+        }
+    }
+
+    public async Task<HoldActionOutcome> CancelAsync(Guid holdId, string studentId, CancellationToken cancellationToken)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        var hold = await LockHoldAsync(holdId, cancellationToken);
+        if (hold is null)
+        {
+            return HoldActionOutcome.NotFound;
+        }
+
+        if (hold.StudentId != studentId)
+        {
+            return HoldActionOutcome.NotOwner;
+        }
+
+        switch (hold.CurrentStatus)
+        {
+            case HoldStatus.Held:
+                await db.Database.ExecuteSqlAsync(
+                    $"UPDATE holds SET status = 'CANCELLED', cancelled_at = clock_timestamp() WHERE id = {holdId}",
+                    cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return HoldActionOutcome.Succeeded;
+
+            // A repeated cancel is a retry of something that already worked, so nothing changes.
+            case HoldStatus.Cancelled:
+                return HoldActionOutcome.Succeeded;
+
+            case HoldStatus.Confirmed:
+                return HoldActionOutcome.Confirmed;
+
+            default:
+                return HoldActionOutcome.Expired;
+        }
+    }
+
+    public Task<HoldResponse?> GetAsync(Guid holdId, CancellationToken cancellationToken) =>
+        QueryHolds(hold => hold.Id == holdId).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<HoldResponse>> ListForStudentAsync(
+        string studentId,
+        CancellationToken cancellationToken) =>
+        await QueryHolds(hold => hold.StudentId == studentId).ToListAsync(cancellationToken);
+
+    // A lapsed hold is reported as EXPIRED straight away, without waiting for it to be marked in the table.
+    // EF translates DateTime.UtcNow to Postgres's now(), so every backend instance uses the database clock.
+    private IQueryable<HoldResponse> QueryHolds(Expression<Func<Hold, bool>> filter) =>
+        from hold in db.Holds.Where(filter)
+        join schoolClass in db.Classes on hold.ClassId equals schoolClass.Id
+        orderby hold.CreatedAt descending, hold.Id
+        select new HoldResponse(
+            hold.Id,
+            hold.ClassId,
+            schoolClass.Name,
+            hold.Status == HoldStatus.Held && hold.ExpiresAt <= DateTime.UtcNow ? HoldStatus.Expired : hold.Status,
+            hold.ExpiresAt,
+            DateTime.UtcNow);
+
     /// <summary>
     /// Takes the per-class lock and returns the class's seat total, or null if the class doesn't exist.
     /// Every change to a class's holds passes through this lock, so requests for the same class run
@@ -103,5 +210,43 @@ public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions)
             .ToListAsync(cancellationToken);
 
         return rows.Count == 0 ? null : rows[0];
+    }
+
+    /// <summary>
+    /// Takes the lock of the hold's class, then reads the hold. Confirm and cancel need the same lock as
+    /// applying: otherwise a confirm in the last instant could race a new applicant for the same seat.
+    /// </summary>
+    private async Task<LockedHold?> LockHoldAsync(Guid holdId, CancellationToken cancellationToken)
+    {
+        // A hold's class never changes, so it is safe to read this before taking the lock.
+        var classIds = await db.Database
+            .SqlQuery<Guid>($"""SELECT class_id AS "Value" FROM holds WHERE id = {holdId}""")
+            .ToListAsync(cancellationToken);
+
+        if (classIds.Count == 0)
+        {
+            return null;
+        }
+
+        await LockClassAsync(classIds[0], cancellationToken);
+
+        var holds = await db.Database
+            .SqlQuery<LockedHold>(
+                $"""
+                SELECT student_id AS "StudentId", status AS "Status", expires_at <= clock_timestamp() AS "HasLapsed"
+                FROM holds WHERE id = {holdId}
+                """)
+            .ToListAsync(cancellationToken);
+
+        return holds[0];
+    }
+
+    private sealed class LockedHold
+    {
+        public required string StudentId { get; init; }
+        public required string Status { get; init; }
+        public bool HasLapsed { get; init; }
+
+        public string CurrentStatus => Status == HoldStatus.Held && HasLapsed ? HoldStatus.Expired : Status;
     }
 }
