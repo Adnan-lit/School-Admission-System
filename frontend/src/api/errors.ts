@@ -34,3 +34,9 @@ export class ApiError extends Error {
 export function getErrorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : GENERAL_MESSAGE
 }
+
+/** A button's "can't reach the server" message is out of date once a later refresh has succeeded. */
+export function currentActionError(error: unknown, submittedAt: number, lastRefreshedAt: number): unknown {
+  const isNetworkFailure = error instanceof ApiError && error.code === NETWORK_ERROR
+  return isNetworkFailure && lastRefreshedAt > submittedAt ? null : error
+}

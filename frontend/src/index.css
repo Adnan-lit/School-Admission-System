@@ -191,6 +191,88 @@ tbody th {
   white-space: normal;
 }
 
+.card {
+  padding: 16px;
+  max-width: 520px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.details {
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+}
+
+.details dt {
+  color: var(--muted);
+}
+
+.details dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.time-left {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.status {
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.status-held {
+  background: #9a6700;
+}
+
+.status-confirmed {
+  background: var(--success);
+}
+
+.status-expired {
+  background: var(--danger);
+}
+
+.status-cancelled {
+  background: var(--muted);
+}
+
+.status-description {
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button-secondary {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+button.button-secondary:disabled {
+  background: var(--border);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
 /* On phones each row becomes a small card, so the apply button is visible without scrolling sideways. */
 @media (max-width: 640px) {
   thead {

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { applyForSeat, listClasses, listMyHolds, type ClassSeats, type Hold } from '../api/admission'
-import { ErrorNotice } from '../components/ErrorNotice'
+import { currentActionError } from '../api/errors'
+import { ErrorNotices } from '../components/ErrorNotice'
 import { useStudent } from '../student/StudentContext'
 
 const REFRESH_INTERVAL_MS = 3000
@@ -15,6 +16,7 @@ export function ClassListPage() {
 
 function ClassList({ studentId }: { studentId: string | null }) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   const classes = useQuery({
     queryKey: ['classes'],
@@ -31,6 +33,7 @@ function ClassList({ studentId }: { studentId: string | null }) {
 
   const apply = useMutation({
     mutationFn: (classId: string) => applyForSeat(classId, studentId!),
+    onSuccess: (hold) => navigate(`/holds/${hold.holdId}`),
     // Not returned on purpose: the result should show at once, without waiting for the list to refresh.
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['classes'] })
@@ -48,13 +51,9 @@ function ClassList({ studentId }: { studentId: string | null }) {
     <section>
       <h2>Class তালিকা</h2>
 
-      {classes.isError && <ErrorNotice error={classes.error} />}
-      {apply.isError && <ErrorNotice error={apply.error} />}
-      {apply.isSuccess && (
-        <p className="notice notice-success" role="status">
-          আবেদন হয়েছে। নির্দিষ্ট সময়ের মধ্যে ভর্তি ফি দিলে ভর্তি নিশ্চিত হবে।
-        </p>
-      )}
+      <ErrorNotices
+        errors={[classes.error, currentActionError(apply.error, apply.submittedAt, classes.dataUpdatedAt)]}
+      />
       {studentId === null && (
         <p className="notice notice-info">আবেদন করতে উপরের ঘরে শিক্ষার্থীর জন্ম নিবন্ধন নম্বর লিখুন।</p>
       )}
@@ -119,7 +118,11 @@ interface ApplyActionProps {
 
 function ApplyAction({ schoolClass, activeHold, hasStudent, isApplying, onApply }: ApplyActionProps) {
   if (activeHold) {
-    return <span>{activeHold.status === 'CONFIRMED' ? 'ভর্তি নিশ্চিত' : 'আবেদন করা হয়েছে'}</span>
+    return (
+      <Link to={`/holds/${activeHold.holdId}`}>
+        {activeHold.status === 'CONFIRMED' ? 'ভর্তি নিশ্চিত' : 'আবেদন দেখুন'}
+      </Link>
+    )
   }
 
   if (schoolClass.availableSeats === 0) {
