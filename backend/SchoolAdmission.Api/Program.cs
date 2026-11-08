@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Npgsql;
 using SchoolAdmission.Api.Contracts;
 using SchoolAdmission.Api.Data;
 using SchoolAdmission.Api.Options;
@@ -20,6 +21,7 @@ if (holdDurationSeconds <= 0)
 
 builder.Services.Configure<HoldOptions>(options => options.DurationSeconds = holdDurationSeconds);
 builder.Services.AddScoped<HoldService>();
+builder.Services.AddHostedService<ExpiredHoldCleanupService>();
 
 builder.Services.AddDbContext<AppDbContext>(options => options
     .UseNpgsql(connectionString)
@@ -57,10 +59,28 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 var app = builder.Build();
 
 // Reviewers only run "docker compose up", so the schema has to create itself.
+// Retrying covers the moments when the database can't be reached yet, which are normal during startup.
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    const int maxAttempts = 30;
+
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync();
+            break;
+        }
+        catch (NpgsqlException exception) when (exception.IsTransient && attempt < maxAttempts)
+        {
+            app.Logger.LogWarning(
+                "The database can't be reached yet. Retrying ({Attempt} of {MaxAttempts}).",
+                attempt,
+                maxAttempts);
+            await Task.Delay(TimeSpan.FromSeconds(2));
+        }
+    }
 }
 
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>

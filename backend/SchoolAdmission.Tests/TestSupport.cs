@@ -1,18 +1,19 @@
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace SchoolAdmission.Tests;
 
 /// <summary>Runs the real API in memory against a real PostgreSQL database.</summary>
 public sealed class ApiFixture : WebApplicationFactory<Program>;
 
-// One shared collection, so timing-sensitive tests don't compete with each other for connections.
 [CollectionDefinition(nameof(ApiCollection))]
 public sealed class ApiCollection : ICollectionFixture<ApiFixture>;
 
 public sealed record CreatedClass(string Id, string Name, int TotalSeats);
 
-public sealed record CreatedHold(string HoldId);
+public sealed record CreatedHold(string HoldId, DateTime ExpiresAt);
 
 public sealed record ClassSeats(int TotalSeats, int HeldSeats, int ConfirmedSeats, int AvailableSeats);
 
@@ -39,13 +40,15 @@ public sealed class AdmissionClient(HttpClient http)
     public Task<HttpResponseMessage> ApplyAsync(string classId, string? studentId) =>
         SendAsStudentAsync(HttpMethod.Post, $"/classes/{classId}/holds", studentId);
 
-    public async Task<string> ApplyForHoldIdAsync(string classId, string studentId)
+    public async Task<CreatedHold> ApplyForHoldAsync(string classId, string studentId)
     {
         var response = await ApplyAsync(classId, studentId);
         response.EnsureSuccessStatusCode();
-        var hold = await response.Content.ReadFromJsonAsync<CreatedHold>();
-        return hold!.HoldId;
+        return (await response.Content.ReadFromJsonAsync<CreatedHold>())!;
     }
+
+    public async Task<string> ApplyForHoldIdAsync(string classId, string studentId) =>
+        (await ApplyForHoldAsync(classId, studentId)).HoldId;
 
     public Task<HttpResponseMessage> GetHoldAsync(string holdId) => http.GetAsync($"/holds/{holdId}");
 
