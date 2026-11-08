@@ -7,6 +7,9 @@
   --primary: #0b5cad;
   --danger: #b3261e;
   --danger-surface: #fdecea;
+  --primary-surface: #e8f1fb;
+  --success: #1b7f3b;
+  --success-surface: #e7f5ec;
 
   font-family: system-ui, 'Noto Sans Bengali', 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
@@ -122,4 +125,126 @@ button:disabled {
   color: var(--danger);
   background: var(--danger-surface);
   border: 1px solid var(--danger);
+}
+
+.notice-success {
+  color: var(--success);
+  background: var(--success-surface);
+  border: 1px solid var(--success);
+}
+
+.notice-info {
+  color: var(--primary);
+  background: var(--primary-surface);
+  border: 1px solid var(--primary);
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+  max-width: 420px;
+  justify-items: start;
+}
+
+.field {
+  width: 100%;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+thead th {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody th {
+  font-weight: 600;
+  white-space: normal;
+}
+
+/* On phones each row becomes a small card, so the apply button is visible without scrolling sideways. */
+@media (max-width: 640px) {
+  thead {
+    display: none;
+  }
+
+  table,
+  tbody,
+  tr,
+  tbody th,
+  td {
+    display: block;
+  }
+
+  tr {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  tbody th,
+  td {
+    padding: 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+
+  tbody th {
+    margin-bottom: 6px;
+  }
+
+  td[data-label] {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  td[data-label]::before {
+    content: attr(data-label);
+    color: var(--muted);
+  }
+
+  .row-action {
+    margin-top: 10px;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

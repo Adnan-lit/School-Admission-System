@@ -1,5 +1,6 @@
 import { Link, NavLink, Route, Routes } from 'react-router'
 import { ClassListPage } from './pages/ClassListPage'
+import { CreateClassPage } from './pages/CreateClassPage'
 import { StudentIdBox } from './student/StudentIdBox'
 
 function NotFound() {
@@ -22,6 +23,7 @@ function App() {
             <NavLink to="/" end>
               Class তালিকা
             </NavLink>
+            <NavLink to="/classes/new">Class তৈরি</NavLink>
           </nav>
         </div>
       </header>
@@ -29,6 +31,7 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<ClassListPage />} />
+          <Route path="/classes/new" element={<CreateClassPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

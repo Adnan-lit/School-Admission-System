@@ -1,4 +1,5 @@
-const BANGLA_ZERO = '০'.charCodeAt(0)
+import { toAsciiDigits } from '../utils/digits'
+
 const STUDENT_ID_LENGTH = 17
 
 /**
@@ -6,9 +7,7 @@ const STUDENT_ID_LENGTH = 17
  * This matters beyond tidiness: fetch throws an error if a header contains Bangla characters.
  */
 export function normalizeStudentId(input: string): string {
-  return input
-    .replace(/[\s-]/g, '')
-    .replace(/[০-৯]/g, (digit) => String(digit.charCodeAt(0) - BANGLA_ZERO))
+  return toAsciiDigits(input.replace(/[\s-]/g, ''))
 }
 
 export function isValidStudentId(normalizedId: string): boolean {
