@@ -4,11 +4,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using SchoolAdmission.Api.Contracts;
 using SchoolAdmission.Api.Data;
+using SchoolAdmission.Api.Options;
+using SchoolAdmission.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("The ConnectionStrings__Default environment variable is not set.");
+
+var holdDurationSeconds = builder.Configuration.GetValue("HOLD_DURATION_SECONDS", 600);
+if (holdDurationSeconds <= 0)
+{
+    throw new InvalidOperationException("HOLD_DURATION_SECONDS must be a whole number of 1 or more.");
+}
+
+builder.Services.Configure<HoldOptions>(options => options.DurationSeconds = holdDurationSeconds);
+builder.Services.AddScoped<HoldService>();
 
 builder.Services.AddDbContext<AppDbContext>(options => options
     .UseNpgsql(connectionString)

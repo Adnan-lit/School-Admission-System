@@ -25,7 +25,8 @@ services:
         condition: service_healthy
     environment:
       # GSS is Kerberos login, which isn't used here. Disabling it stops a "cannot load library" log line.
-      ConnectionStrings__Default: ${DB_CONNECTION_STRING:-Host=db;Port=5432;Database=school_admission;Username=admission;Password=admission;GSS Encryption Mode=Disable}
+      # The pool is capped so two backend processes stay under Postgres's default limit of 100 connections.
+      ConnectionStrings__Default: ${DB_CONNECTION_STRING:-Host=db;Port=5432;Database=school_admission;Username=admission;Password=admission;GSS Encryption Mode=Disable;Maximum Pool Size=40;Timeout=30}
       HOLD_DURATION_SECONDS: ${HOLD_DURATION_SECONDS:-600}
     ports:
       - "8080:8080"
@@ -37,6 +38,19 @@ services:
       - backend
     ports:
       - "3000:80"
+
+  # Runs only on demand: docker compose run --rm --build backend-tests
+  # It uses its own database on the same server, so the app's data is untouched.
+  backend-tests:
+    build:
+      context: ./backend
+      target: test
+    profiles: ["test"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: Host=db;Port=5432;Database=school_admission_test;Username=admission;Password=admission;GSS Encryption Mode=Disable;Maximum Pool Size=40;Timeout=30
 
 volumes:
   postgres-data:
