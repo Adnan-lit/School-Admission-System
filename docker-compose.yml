@@ -36,6 +36,9 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    environment:
+      # The browser makes these calls, so this must be an address the browser can reach, not "backend".
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8080}
     ports:
       - "3000:80"
 
