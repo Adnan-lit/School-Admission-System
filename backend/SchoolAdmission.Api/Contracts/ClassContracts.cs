@@ -6,6 +6,7 @@ public sealed class CreateClassRequest
 {
     [Required(ErrorMessage = "name is required.")]
     [StringLength(200, ErrorMessage = "name must be 200 characters or fewer.")]
+    [RegularExpression(@"^[^\p{Cc}]*$", ErrorMessage = "name must not contain control characters.")]
     public string? Name { get; init; }
 
     [Required(ErrorMessage = "totalSeats is required.")]

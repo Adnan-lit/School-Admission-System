@@ -14,5 +14,8 @@ public static class ErrorCodes
     public const string HoldExpired = "HOLD_EXPIRED";
     public const string HoldCancelled = "HOLD_CANCELLED";
     public const string HoldConfirmed = "HOLD_CONFIRMED";
+    public const string NotFound = "NOT_FOUND";
+    public const string MethodNotAllowed = "METHOD_NOT_ALLOWED";
+    public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
     public const string InternalError = "INTERNAL_ERROR";
 }

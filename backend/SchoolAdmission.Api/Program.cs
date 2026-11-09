@@ -20,6 +20,7 @@ if (holdDurationSeconds <= 0)
 }
 
 builder.Services.Configure<HoldOptions>(options => options.DurationSeconds = holdDurationSeconds);
+builder.Services.AddSingleton<HoldWriteGate>();
 builder.Services.AddScoped<HoldService>();
 builder.Services.AddHostedService<ExpiredHoldCleanupService>();
 
@@ -33,6 +34,9 @@ builder.Services
     .AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
+        // Stops ASP.NET adding its own error body, so UseStatusCodePages below can add the standard one.
+        options.SuppressMapClientErrors = true;
+
         options.InvalidModelStateResponseFactory = context =>
         {
             // Attribute messages are written for people. JSON parser messages expose internals,
@@ -89,6 +93,25 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
     await context.Response.WriteAsJsonAsync(
         new ApiError(ErrorCodes.InternalError, "Something went wrong on the server."));
 }));
+
+// Covers the errors ASP.NET produces by itself, such as an unknown address, so that they match all the others.
+app.UseStatusCodePages(async context =>
+{
+    var response = context.HttpContext.Response;
+    var error = response.StatusCode switch
+    {
+        StatusCodes.Status404NotFound => new ApiError(ErrorCodes.NotFound, "This address does not exist."),
+        StatusCodes.Status405MethodNotAllowed => new ApiError(
+            ErrorCodes.MethodNotAllowed,
+            "This address does not support this method."),
+        StatusCodes.Status415UnsupportedMediaType => new ApiError(
+            ErrorCodes.UnsupportedMediaType,
+            "The request body must be sent as JSON."),
+        _ => new ApiError(ErrorCodes.InvalidRequest, "The request could not be processed."),
+    };
+
+    await response.WriteAsJsonAsync(error);
+});
 
 app.UseCors();
 
