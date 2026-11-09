@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apiRequest } from './client'
 import { ApiError, currentActionError } from './errors'
 
-function stubFetch(implementation: () => Promise<Response>) {
+function stubFetch(implementation: (url: string, options: RequestInit) => Promise<Response>) {
   const fetchMock = vi.fn(implementation)
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
@@ -17,7 +17,15 @@ async function failureOf(request: Promise<unknown>): Promise<ApiError> {
   return result as ApiError
 }
 
+/** A server that accepts the request and then never answers. Like a real fetch, it stops when aborted. */
+function neverAnswer(_url: string, options: RequestInit) {
+  return new Promise<Response>((_resolve, reject) => {
+    options.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+  })
+}
+
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -57,6 +65,44 @@ describe('apiRequest', () => {
     expect(error.message).toContain('খালি seat নেই')
   })
 
+  it('gives up and explains when the server never answers', async () => {
+    vi.useFakeTimers()
+    stubFetch(neverAnswer)
+
+    const failure = failureOf(apiRequest('/classes'))
+    await vi.advanceTimersByTimeAsync(30_000)
+    const error = await failure
+
+    expect(error.code).toBe('TIMEOUT')
+    expect(error.message).toContain('সাড়া দিচ্ছে না')
+  })
+
+  it('keeps waiting for a slow server until the time limit', async () => {
+    vi.useFakeTimers()
+    stubFetch(neverAnswer)
+    let settled = false
+
+    const request = apiRequest('/classes').finally(() => {
+      settled = true
+    })
+    request.catch(() => {})
+    await vi.advanceTimersByTimeAsync(29_000)
+
+    expect(settled).toBe(false)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(settled).toBe(true)
+  })
+
+  it('treats a cancelled request as cancelled, not as a failure', async () => {
+    stubFetch(neverAnswer)
+    const controller = new AbortController()
+
+    const request = apiRequest('/classes', { signal: controller.signal })
+    controller.abort()
+
+    await expect(request).rejects.not.toBeInstanceOf(ApiError)
+  })
+
   it('still gives a readable message when an error response is not JSON', async () => {
     stubFetch(() => Promise.resolve(new Response('<html>Bad gateway</html>', { status: 502 })))
 
@@ -75,6 +121,10 @@ describe('currentActionError', () => {
 
   it('drops a network failure once a newer refresh has succeeded', () => {
     expect(currentActionError(networkFailure, 2000, 3000)).toBeNull()
+  })
+
+  it('drops a timeout once a newer refresh has succeeded', () => {
+    expect(currentActionError(new ApiError('TIMEOUT'), 2000, 3000)).toBeNull()
   })
 
   it('keeps other failures, because a refresh does not resolve them', () => {

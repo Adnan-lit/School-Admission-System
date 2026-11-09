@@ -1,10 +1,12 @@
 export const NETWORK_ERROR = 'NETWORK_ERROR'
+export const TIMEOUT = 'TIMEOUT'
 export const UNEXPECTED_RESPONSE = 'UNEXPECTED_RESPONSE'
 
 const GENERAL_MESSAGE = 'কিছু একটা সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।'
 
 const MESSAGES: Record<string, string> = {
   [NETWORK_ERROR]: 'সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না। ইন্টারনেট সংযোগ দেখে একটু পরে আবার চেষ্টা করুন।',
+  [TIMEOUT]: 'সার্ভার সাড়া দিচ্ছে না। একটু পরে আবার চেষ্টা করুন।',
   [UNEXPECTED_RESPONSE]: GENERAL_MESSAGE,
   INVALID_REQUEST: 'দেওয়া তথ্যে ভুল আছে। ঠিক করে আবার চেষ্টা করুন।',
   CLASS_NOT_FOUND: 'এই class-টি খুঁজে পাওয়া যায়নি।',
@@ -37,6 +39,6 @@ export function getErrorMessage(error: unknown): string {
 
 /** A button's "can't reach the server" message is out of date once a later refresh has succeeded. */
 export function currentActionError(error: unknown, submittedAt: number, lastRefreshedAt: number): unknown {
-  const isNetworkFailure = error instanceof ApiError && error.code === NETWORK_ERROR
-  return isNetworkFailure && lastRefreshedAt > submittedAt ? null : error
+  const isConnectionFailure = error instanceof ApiError && (error.code === NETWORK_ERROR || error.code === TIMEOUT)
+  return isConnectionFailure && lastRefreshedAt > submittedAt ? null : error
 }
