@@ -8,6 +8,7 @@
   --danger: #b3261e;
   --danger-surface: #fdecea;
   --primary-surface: #e8f1fb;
+  --admin-header: #1f3a5f;
   --success: #1b7f3b;
   --success-surface: #e7f5ec;
 
@@ -48,6 +49,20 @@ main {
   padding: 16px;
   display: grid;
   gap: 12px;
+}
+
+.app-header-admin {
+  background: var(--admin-header);
+  color: #ffffff;
+}
+
+.app-header-admin nav a {
+  color: #ffffff;
+}
+
+.admin-page {
+  display: grid;
+  gap: 32px;
 }
 
 nav {

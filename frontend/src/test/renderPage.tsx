@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { vi } from 'vitest'
-import { StudentContext } from '../student/StudentContext'
+import { StudentContext } from '../user/student/StudentContext'
 
 export const TEST_STUDENT_ID = '20152691234567890'
 

@@ -1,4 +1,4 @@
-import { toAsciiDigits } from '../utils/digits'
+import { toAsciiDigits } from '../../utils/digits'
 
 const STUDENT_ID_LENGTH = 17
 

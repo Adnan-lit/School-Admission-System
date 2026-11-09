@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Hold } from '../api/admission'
+import type { Hold } from '../../api/admission'
 import { displayStatus, formatTimeLeft, secondsLeft } from './holdTime'
 
 function holdWith(expiresAt: string, serverTime: string): Hold {

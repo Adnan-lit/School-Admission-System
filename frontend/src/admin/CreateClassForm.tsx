@@ -1,11 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router'
 import { createClass } from '../api/admission'
 import { ErrorNotice } from '../components/ErrorNotice'
 import { validateClassForm, type ClassFormProblems } from './classForm'
 
-export function CreateClassPage() {
+export function CreateClassForm() {
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [totalSeats, setTotalSeats] = useState('')
@@ -41,7 +40,7 @@ export function CreateClassPage() {
       {create.isError && <ErrorNotice error={create.error} />}
       {create.isSuccess && (
         <p className="notice notice-success" role="status">
-          “{create.data.name}” তৈরি হয়েছে। <Link to="/">Class তালিকা দেখুন</Link>
+          “{create.data.name}” তৈরি হয়েছে।
         </p>
       )}
 

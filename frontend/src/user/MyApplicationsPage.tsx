@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { listMyHolds } from '../api/admission'
 import { ErrorNotice } from '../components/ErrorNotice'
-import { displayStatus, formatTimeLeft, secondsLeft } from '../holds/holdTime'
-import { StatusBadge } from '../holds/StatusBadge'
-import { useNow } from '../holds/useNow'
-import { useStudent } from '../student/StudentContext'
+import { displayStatus, formatTimeLeft, secondsLeft } from './holds/holdTime'
+import { StatusBadge } from './holds/StatusBadge'
+import { useNow } from './holds/useNow'
+import { useStudent } from './student/StudentContext'
 
 const REFRESH_INTERVAL_MS = 3000
 

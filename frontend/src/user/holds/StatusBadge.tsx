@@ -1,4 +1,4 @@
-import type { HoldStatus } from '../api/admission'
+import type { HoldStatus } from '../../api/admission'
 
 const DESCRIPTIONS: Record<HoldStatus, string> = {
   HELD: 'ফি দেওয়ার অপেক্ষায়',

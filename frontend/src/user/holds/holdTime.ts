@@ -1,4 +1,4 @@
-import type { Hold, HoldStatus } from '../api/admission'
+import type { Hold, HoldStatus } from '../../api/admission'
 
 /**
  * Seconds until the hold runs out. The time is measured on the server's clock, so the countdown

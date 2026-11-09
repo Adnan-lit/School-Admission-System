@@ -3,10 +3,10 @@ import { Link, useParams } from 'react-router'
 import { cancelHold, confirmHold, getHold, type Hold, type HoldStatus } from '../api/admission'
 import { currentActionError } from '../api/errors'
 import { ErrorNotice, ErrorNotices } from '../components/ErrorNotice'
-import { displayStatus, formatTimeLeft, secondsLeft } from '../holds/holdTime'
-import { StatusBadge } from '../holds/StatusBadge'
-import { useNow } from '../holds/useNow'
-import { useStudent } from '../student/StudentContext'
+import { displayStatus, formatTimeLeft, secondsLeft } from './holds/holdTime'
+import { StatusBadge } from './holds/StatusBadge'
+import { useNow } from './holds/useNow'
+import { useStudent } from './student/StudentContext'
 
 const REFRESH_INTERVAL_MS = 3000
 

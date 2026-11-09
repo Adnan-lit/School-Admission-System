@@ -1,46 +1,35 @@
-import { Link, NavLink, Route, Routes } from 'react-router'
-import { ApplicationPage } from './pages/ApplicationPage'
-import { ClassListPage } from './pages/ClassListPage'
-import { CreateClassPage } from './pages/CreateClassPage'
-import { MyApplicationsPage } from './pages/MyApplicationsPage'
-import { StudentIdBox } from './student/StudentIdBox'
+import { Link, Route, Routes } from 'react-router'
+import { AdminLayout } from './admin/AdminLayout'
+import { AdminPage } from './admin/AdminPage'
+import { ApplicationPage } from './user/ApplicationPage'
+import { ClassListPage } from './user/ClassListPage'
+import { MyApplicationsPage } from './user/MyApplicationsPage'
+import { UserLayout } from './user/UserLayout'
 
 function NotFound() {
   return (
-    <section>
+    <main>
       <h2>এই পেজটি পাওয়া যায়নি</h2>
       <Link to="/">Class তালিকায় ফিরে যান</Link>
-    </section>
+    </main>
   )
 }
 
 function App() {
   return (
-    <>
-      <header className="app-header">
-        <div className="app-header-content">
-          <h1>স্কুল ভর্তি</h1>
-          <StudentIdBox />
-          <nav>
-            <NavLink to="/" end>
-              Class তালিকা
-            </NavLink>
-            <NavLink to="/my-applications">আমার আবেদন</NavLink>
-            <NavLink to="/classes/new">Class তৈরি</NavLink>
-          </nav>
-        </div>
-      </header>
+    <Routes>
+      <Route element={<UserLayout />}>
+        <Route index element={<ClassListPage />} />
+        <Route path="holds/:holdId" element={<ApplicationPage />} />
+        <Route path="my-applications" element={<MyApplicationsPage />} />
+      </Route>
 
-      <main>
-        <Routes>
-          <Route path="/" element={<ClassListPage />} />
-          <Route path="/classes/new" element={<CreateClassPage />} />
-          <Route path="/holds/:holdId" element={<ApplicationPage />} />
-          <Route path="/my-applications" element={<MyApplicationsPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </main>
-    </>
+      <Route path="admin" element={<AdminLayout />}>
+        <Route index element={<AdminPage />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   )
 }
 

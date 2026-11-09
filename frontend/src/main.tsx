@@ -6,16 +6,13 @@ import './index.css'
 import App from './App.tsx'
 import { queryClient } from './api/queryClient'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { StudentProvider } from './student/StudentProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <StudentProvider>
-            <App />
-          </StudentProvider>
+          <App />
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

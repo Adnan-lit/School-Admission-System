@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { applyForSeat, listClasses, listMyHolds, type ClassSeats, type Hold } from '../api/admission'
 import { currentActionError } from '../api/errors'
 import { ErrorNotices } from '../components/ErrorNotice'
-import { useStudent } from '../student/StudentContext'
+import { useStudent } from './student/StudentContext'
 
 const REFRESH_INTERVAL_MS = 3000
 
@@ -60,11 +60,7 @@ function ClassList({ studentId }: { studentId: string | null }) {
 
       {classes.isPending && <p>লোড হচ্ছে…</p>}
 
-      {!classes.isError && classes.data?.length === 0 && (
-        <p>
-          এখনো কোনো class তৈরি করা হয়নি। <Link to="/classes/new">নতুন class তৈরি করুন</Link>
-        </p>
-      )}
+      {!classes.isError && classes.data?.length === 0 && <p>এখনো ভর্তির জন্য কোনো class খোলা হয়নি।</p>}
 
       {classes.data && classes.data.length > 0 && (
         <div className="table-scroll">
