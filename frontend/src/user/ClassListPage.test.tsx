@@ -83,11 +83,46 @@ describe('ClassListPage', () => {
     expect(screen.getByText(/জন্ম নিবন্ধন নম্বর লিখুন/)).toBeInTheDocument()
   })
 
+  it('points out when few seats are left, and not otherwise', async () => {
+    vi.mocked(listClasses).mockResolvedValue([
+      schoolClass({ id: 'c1', name: 'Plenty', availableSeats: 80 }),
+      schoolClass({ id: 'c2', name: 'Nearly full', availableSeats: 3 }),
+    ])
+    const { container } = renderPage(<ClassListPage />)
+    await screen.findByText('Nearly full')
+
+    expect(screen.getByText('আর ৩টি')).toBeInTheDocument()
+    expect(screen.getAllByText(/^আর /)).toHaveLength(1)
+    expect(container.querySelector('.free-seats-few')).toHaveTextContent('3')
+    expect(container.querySelector('.free-seats-plenty')).toHaveTextContent('80')
+  })
+
+  it('shows an active application as an action, in the same style as the buttons', async () => {
+    vi.mocked(listClasses).mockResolvedValue([schoolClass()])
+    vi.mocked(listMyHolds).mockResolvedValue([
+      {
+        holdId: 'h1',
+        classId: 'c1',
+        className: 'Class 6 - Morning Shift',
+        status: 'HELD',
+        expiresAt: '2030-01-01T00:00:00Z',
+        serverTime: '2029-12-31T23:59:00Z',
+      },
+    ])
+    renderPage(<ClassListPage />)
+
+    const link = await screen.findByRole('link', { name: 'আবেদন দেখুন' })
+
+    expect(link).toHaveAttribute('href', '/holds/h1')
+    expect(link).toHaveClass('link-button')
+  })
+
   it('shows when a class is full', async () => {
     vi.mocked(listClasses).mockResolvedValue([schoolClass({ availableSeats: 0 })])
     renderPage(<ClassListPage />)
 
     expect(await screen.findByRole('button', { name: 'Seat নেই' })).toBeDisabled()
+    expect(screen.queryByText(/^আর /)).toBeNull()
   })
 
   it('applies with the current student and opens the application', async () => {

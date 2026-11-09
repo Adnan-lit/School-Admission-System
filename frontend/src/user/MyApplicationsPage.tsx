@@ -1,15 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { listMyHolds } from '../api/admission'
 import { ErrorNotice } from '../components/ErrorNotice'
-import { displayStatus, formatTimeLeft, secondsLeft } from './holds/holdTime'
+import { usePageTitle } from '../utils/usePageTitle'
+import { displayStatus, formatTimeLeft, millisecondsLeft } from './holds/holdTime'
 import { StatusBadge } from './holds/StatusBadge'
+import { useMyHolds } from './holds/useMyHolds'
 import { useNow } from './holds/useNow'
 import { useStudent } from './student/StudentContext'
 
-const REFRESH_INTERVAL_MS = 3000
-
 export function MyApplicationsPage() {
+  usePageTitle('আমার আবেদন')
   const { studentId } = useStudent()
 
   return (
@@ -27,11 +26,7 @@ export function MyApplicationsPage() {
 function ApplicationList({ studentId }: { studentId: string }) {
   const now = useNow()
 
-  const holds = useQuery({
-    queryKey: ['my-holds', studentId],
-    queryFn: ({ signal }) => listMyHolds(studentId, signal),
-    refetchInterval: REFRESH_INTERVAL_MS,
-  })
+  const holds = useMyHolds(studentId)
 
   return (
     <>
@@ -59,7 +54,7 @@ function ApplicationList({ studentId }: { studentId: string }) {
             </thead>
             <tbody>
               {holds.data.map((hold) => {
-                const remaining = secondsLeft(hold, holds.dataUpdatedAt, now)
+                const remaining = millisecondsLeft(hold, holds.dataUpdatedAt, now)
                 const status = displayStatus(hold, remaining)
 
                 return (
@@ -70,7 +65,9 @@ function ApplicationList({ studentId }: { studentId: string }) {
                     </td>
                     <td data-label="সময় বাকি">{status === 'HELD' ? formatTimeLeft(remaining) : '—'}</td>
                     <td className="row-action">
-                      <Link to={`/holds/${hold.holdId}`}>{status === 'HELD' ? 'ফি দিন বা বাতিল করুন' : 'বিস্তারিত'}</Link>
+                      <Link to={`/holds/${hold.holdId}`} className={status === 'HELD' ? 'link-button' : undefined}>
+                        {status === 'HELD' ? 'ফি দিন বা বাতিল করুন' : 'বিস্তারিত'}
+                      </Link>
                     </td>
                   </tr>
                 )

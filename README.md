@@ -12,7 +12,7 @@ Docker is the only requirement. Ports 3000 and 8080 must be free.
 docker compose up
 ```
 
-The first run builds the images, which takes a few minutes.
+The first run builds the images, which takes a few minutes. To start in the background and wait until everything is ready, use `docker compose up -d --wait`.
 
 | | URL |
 |---|---|

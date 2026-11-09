@@ -6,5 +6,7 @@ public sealed class HoldOptions
 
     public TimeSpan CleanupInterval { get; set; } = TimeSpan.FromSeconds(5);
 
-    public int MaxConcurrentWrites { get; set; } = 10;
+    public int MaxConcurrentApplications { get; set; } = 10;
+
+    public int MaxConcurrentApplicationsPerClass { get; set; } = 3;
 }

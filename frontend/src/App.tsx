@@ -5,8 +5,11 @@ import { ApplicationPage } from './user/ApplicationPage'
 import { ClassListPage } from './user/ClassListPage'
 import { MyApplicationsPage } from './user/MyApplicationsPage'
 import { UserLayout } from './user/UserLayout'
+import { usePageTitle } from './utils/usePageTitle'
 
 function NotFound() {
+  usePageTitle('পেজটি পাওয়া যায়নি')
+
   return (
     <main>
       <h2>এই পেজটি পাওয়া যায়নি</h2>

@@ -1,13 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
-import { applyForSeat, listClasses, listMyHolds, type ClassSeats, type Hold } from '../api/admission'
+import { applyForSeat, listClasses, type ClassSeats, type Hold } from '../api/admission'
 import { currentActionError } from '../api/errors'
 import { ErrorNotices } from '../components/ErrorNotice'
+import { FreeSeats } from '../components/FreeSeats'
+import { isFewSeatsLeft } from '../utils/seats'
+import { usePageTitle } from '../utils/usePageTitle'
+import { useMyHolds } from './holds/useMyHolds'
 import { useStudent } from './student/StudentContext'
 
 const REFRESH_INTERVAL_MS = 3000
 
 export function ClassListPage() {
+  usePageTitle('Class তালিকা')
   const { studentId } = useStudent()
 
   // Starting afresh when the student changes clears any message left over from the previous student.
@@ -24,12 +29,7 @@ function ClassList({ studentId }: { studentId: string | null }) {
     refetchInterval: REFRESH_INTERVAL_MS,
   })
 
-  const myHolds = useQuery({
-    queryKey: ['my-holds', studentId],
-    queryFn: ({ signal }) => listMyHolds(studentId!, signal),
-    enabled: studentId !== null,
-    refetchInterval: REFRESH_INTERVAL_MS,
-  })
+  const myHolds = useMyHolds(studentId)
 
   const apply = useMutation({
     mutationFn: (classId: string) => applyForSeat(classId, studentId!),
@@ -80,11 +80,18 @@ function ClassList({ studentId }: { studentId: string | null }) {
             <tbody>
               {classes.data.map((schoolClass) => (
                 <tr key={schoolClass.id}>
-                  <th scope="row">{schoolClass.name}</th>
+                  <th scope="row">
+                    {schoolClass.name}
+                    {isFewSeatsLeft(schoolClass.availableSeats, schoolClass.totalSeats) && (
+                      <span className="few-seats-badge">আর {schoolClass.availableSeats.toLocaleString('bn-BD')}টি</span>
+                    )}
+                  </th>
                   <td data-label="মোট">{schoolClass.totalSeats}</td>
                   <td data-label="Hold-এ আছে">{schoolClass.heldSeats}</td>
                   <td data-label="নিশ্চিত">{schoolClass.confirmedSeats}</td>
-                  <td data-label="খালি">{schoolClass.availableSeats}</td>
+                  <td data-label="খালি">
+                    <FreeSeats available={schoolClass.availableSeats} total={schoolClass.totalSeats} />
+                  </td>
                   <td className="row-action">
                     <ApplyAction
                       schoolClass={schoolClass}
@@ -115,7 +122,10 @@ interface ApplyActionProps {
 function ApplyAction({ schoolClass, activeHold, hasStudent, isApplying, onApply }: ApplyActionProps) {
   if (activeHold) {
     return (
-      <Link to={`/holds/${activeHold.holdId}`}>
+      <Link
+        to={`/holds/${activeHold.holdId}`}
+        className={activeHold.status === 'CONFIRMED' ? 'link-button link-button-success' : 'link-button'}
+      >
         {activeHold.status === 'CONFIRMED' ? 'ভর্তি নিশ্চিত' : 'আবেদন দেখুন'}
       </Link>
     )

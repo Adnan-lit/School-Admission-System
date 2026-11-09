@@ -14,6 +14,11 @@ export function isValidStudentId(normalizedId: string): boolean {
   return /^[0-9]{17}$/.test(normalizedId)
 }
 
+/** True for a number that could still become valid by typing more digits. */
+export function isUnfinishedStudentId(normalizedId: string): boolean {
+  return /^[0-9]+$/.test(normalizedId) && normalizedId.length < STUDENT_ID_LENGTH
+}
+
 /** Explains what is wrong with the ID, or returns null if it is valid or still empty. */
 export function describeStudentIdProblem(normalizedId: string): string | null {
   if (normalizedId === '' || isValidStudentId(normalizedId)) {

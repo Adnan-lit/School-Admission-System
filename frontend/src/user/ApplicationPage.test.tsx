@@ -50,7 +50,7 @@ afterEach(() => {
 
 describe('ApplicationPage', () => {
   it('counts down by itself', async () => {
-    serverHas('HELD', 30)
+    serverHas('HELD', 30.5)
     renderApplication()
 
     expect(await screen.findByRole('timer')).toHaveTextContent('00:30')
@@ -72,6 +72,32 @@ describe('ApplicationPage', () => {
     expect(screen.getByText('EXPIRED')).toBeInTheDocument()
     expect(button(PAY)).toBeDisabled()
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
+  })
+
+  it('makes the countdown more urgent as time runs out', async () => {
+    serverHas('HELD', 75)
+    const { container } = renderApplication()
+    await screen.findByRole('timer')
+    expect(container.querySelector('.countdown-normal')).not.toBeNull()
+
+    await advanceSeconds(20)
+    expect(container.querySelector('.countdown-warning')).not.toBeNull()
+    expect(screen.getByText(/সময় প্রায় শেষ/)).toBeInTheDocument()
+
+    await advanceSeconds(45)
+    expect(container.querySelector('.countdown-urgent')).not.toBeNull()
+  })
+
+  it('shows the time left in the browser tab, and stops when the application ends', async () => {
+    serverHas('HELD', 30.5)
+    renderApplication()
+    await screen.findByRole('timer')
+    expect(document.title).toMatch(/00:\d\d বাকি/)
+
+    await advanceSeconds(32)
+
+    expect(screen.getByText('EXPIRED')).toBeInTheDocument()
+    expect(document.title).not.toContain('বাকি')
   })
 
   it('pays with the current student and shows the admission as confirmed', async () => {

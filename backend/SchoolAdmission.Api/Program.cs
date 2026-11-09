@@ -20,7 +20,7 @@ if (holdDurationSeconds <= 0)
 }
 
 builder.Services.Configure<HoldOptions>(options => options.DurationSeconds = holdDurationSeconds);
-builder.Services.AddSingleton<HoldWriteGate>();
+builder.Services.AddSingleton<ApplicationGate>();
 builder.Services.AddScoped<HoldService>();
 builder.Services.AddHostedService<ExpiredHoldCleanupService>();
 

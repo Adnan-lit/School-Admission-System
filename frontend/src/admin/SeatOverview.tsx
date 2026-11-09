@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { listClasses } from '../api/admission'
+import { listClasses, type ClassSeats } from '../api/admission'
 import { ErrorNotice } from '../components/ErrorNotice'
+import { FreeSeats } from '../components/FreeSeats'
 
 const REFRESH_INTERVAL_MS = 3000
+
+function sum(classes: ClassSeats[], seats: (schoolClass: ClassSeats) => number): number {
+  return classes.reduce((total, schoolClass) => total + seats(schoolClass), 0)
+}
 
 /** The school's live view of every class. It has no apply button, because applying belongs to the user panel. */
 export function SeatOverview() {
@@ -39,10 +44,23 @@ export function SeatOverview() {
                   <td data-label="মোট">{schoolClass.totalSeats}</td>
                   <td data-label="Hold-এ আছে">{schoolClass.heldSeats}</td>
                   <td data-label="নিশ্চিত">{schoolClass.confirmedSeats}</td>
-                  <td data-label="খালি">{schoolClass.availableSeats}</td>
+                  <td data-label="খালি">
+                    <FreeSeats available={schoolClass.availableSeats} total={schoolClass.totalSeats} />
+                  </td>
                 </tr>
               ))}
             </tbody>
+            {classes.data.length > 1 && (
+              <tfoot>
+                <tr>
+                  <th scope="row">সব class মিলিয়ে</th>
+                  <td data-label="মোট">{sum(classes.data, (c) => c.totalSeats)}</td>
+                  <td data-label="Hold-এ আছে">{sum(classes.data, (c) => c.heldSeats)}</td>
+                  <td data-label="নিশ্চিত">{sum(classes.data, (c) => c.confirmedSeats)}</td>
+                  <td data-label="খালি">{sum(classes.data, (c) => c.availableSeats)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}

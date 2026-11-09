@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listClasses, type ClassSeats } from './api/admission'
@@ -58,6 +58,15 @@ describe('the two panels', () => {
     expect(screen.queryByLabelText(STUDENT_ID_LABEL)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: APPLY })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'আমার আবেদন' })).not.toBeInTheDocument()
+  })
+
+  it('names the browser tab after the panel in use', async () => {
+    const { unmount } = renderAt('/')
+    await waitFor(() => expect(document.title).toContain('Class তালিকা'))
+    unmount()
+
+    renderAt('/admin')
+    await waitFor(() => expect(document.title).toContain('School admin'))
   })
 
   it('does not show guardians a link to the admin panel', async () => {

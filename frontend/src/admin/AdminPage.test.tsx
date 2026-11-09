@@ -86,6 +86,26 @@ describe('AdminPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('সার্ভারে একটি সমস্যা হয়েছে')
   })
 
+  it('adds up every class in a totals row', async () => {
+    vi.mocked(listClasses).mockResolvedValue([
+      schoolClass({ id: 'c1', name: 'Morning', totalSeats: 30, heldSeats: 2, confirmedSeats: 8, availableSeats: 20 }),
+      schoolClass({ id: 'c2', name: 'Day', totalSeats: 50, heldSeats: 1, confirmedSeats: 4, availableSeats: 45 }),
+    ])
+    renderPage(<AdminPage />)
+
+    const totals = (await screen.findByRole('rowheader', { name: 'সব class মিলিয়ে' })).closest('tr')!
+
+    expect(within(totals).getAllByRole('cell').map((cell) => cell.textContent)).toEqual(['80', '3', '12', '65'])
+  })
+
+  it('leaves out the totals row for a single class', async () => {
+    vi.mocked(listClasses).mockResolvedValue([schoolClass()])
+    renderPage(<AdminPage />)
+    await screen.findByRole('rowheader', { name: 'Class 7 - Day Shift' })
+
+    expect(screen.queryByRole('rowheader', { name: 'সব class মিলিয়ে' })).toBeNull()
+  })
+
   it('shows live seat counts and offers no way to apply', async () => {
     vi.mocked(listClasses).mockResolvedValue([schoolClass()])
     renderPage(<AdminPage />)

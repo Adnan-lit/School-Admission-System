@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router'
 import { cancelHold, confirmHold, getHold, type Hold, type HoldStatus } from '../api/admission'
 import { currentActionError } from '../api/errors'
 import { ErrorNotice, ErrorNotices } from '../components/ErrorNotice'
-import { displayStatus, formatTimeLeft, secondsLeft } from './holds/holdTime'
+import { usePageTitle } from '../utils/usePageTitle'
+import { displayStatus, formatTimeLeft, millisecondsLeft, urgencyOf } from './holds/holdTime'
 import { StatusBadge } from './holds/StatusBadge'
 import { useNow } from './holds/useNow'
 import { useStudent } from './student/StudentContext'
@@ -54,6 +55,12 @@ function Application({ holdId, studentId }: { holdId: string; studentId: string 
     onError: () => showStatusAndRefresh(),
   })
 
+  const remaining = hold.data ? millisecondsLeft(hold.data, hold.dataUpdatedAt, now) : 0
+  const isRunning = hold.data !== undefined && displayStatus(hold.data, remaining) === 'HELD'
+
+  // A guardian who has moved to another browser tab can still see how long is left.
+  usePageTitle(isRunning ? `${formatTimeLeft(remaining)} বাকি` : 'আবেদন')
+
   if (hold.isPending) {
     return (
       <section>
@@ -73,8 +80,8 @@ function Application({ holdId, studentId }: { holdId: string; studentId: string 
     )
   }
 
-  const remaining = secondsLeft(hold.data, hold.dataUpdatedAt, now)
   const status = displayStatus(hold.data, remaining)
+  const urgency = urgencyOf(remaining)
   const isBusy = pay.isPending || cancel.isPending
   const canAct = status === 'HELD' && studentId !== null && !isBusy
 
@@ -101,15 +108,21 @@ function Application({ holdId, studentId }: { holdId: string; studentId: string 
           <dd>
             <StatusBadge status={status} />
           </dd>
-          {status === 'HELD' && (
-            <>
-              <dt>মেয়াদ শেষ হতে বাকি</dt>
-              <dd className="time-left" role="timer">
-                {formatTimeLeft(remaining)}
-              </dd>
-            </>
-          )}
         </dl>
+
+        {status === 'HELD' && (
+          <div className={`countdown countdown-${urgency}`}>
+            <p className="countdown-label">মেয়াদ শেষ হতে বাকি</p>
+            <p className="countdown-time" role="timer">
+              {formatTimeLeft(remaining)}
+            </p>
+            <p className="countdown-note">
+              {urgency === 'normal'
+                ? 'এই সময়ের মধ্যে ভর্তি ফি না দিলে seat-টি অন্যদের জন্য খুলে যাবে।'
+                : 'সময় প্রায় শেষ। এখনই ভর্তি ফি দিন, নইলে seat-টি অন্যদের জন্য খুলে যাবে।'}
+            </p>
+          </div>
+        )}
 
         {status === 'CONFIRMED' && (
           <p className="notice notice-success" role="status">

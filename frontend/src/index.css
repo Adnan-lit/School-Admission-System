@@ -9,6 +9,8 @@
   --danger-surface: #fdecea;
   --primary-surface: #e8f1fb;
   --admin-header: #1f3a5f;
+  --warning: #8a5a00;
+  --warning-surface: #fff4e0;
   --success: #1b7f3b;
   --success-surface: #e7f5ec;
 
@@ -20,6 +22,10 @@
 
 body {
   margin: 0;
+}
+
+a {
+  color: var(--primary);
 }
 
 h1 {
@@ -43,6 +49,14 @@ main {
   border-bottom: 1px solid var(--border);
 }
 
+.app-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 24px;
+}
+
 .app-header-content {
   max-width: 960px;
   margin: 0 auto;
@@ -60,9 +74,37 @@ main {
   color: #ffffff;
 }
 
+.app-header-admin .app-header-content {
+  max-width: 1120px;
+}
+
+.app-header-admin a:focus-visible {
+  outline-color: #ffffff;
+}
+
 .admin-page {
   display: grid;
   gap: 32px;
+}
+
+.admin-main {
+  max-width: 1120px;
+}
+
+/* On wide screens the form sits beside the seat table, so both are visible without scrolling. */
+@media (min-width: 900px) {
+  .admin-page {
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+tfoot th,
+tfoot td {
+  font-weight: 600;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+  border-bottom: none;
 }
 
 nav {
@@ -83,10 +125,19 @@ nav a.active {
   border-bottom-color: var(--primary);
 }
 
+.student-box-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
 .student-box label {
-  display: block;
   font-weight: 600;
-  margin-bottom: 4px;
+}
+
+.student-box input {
+  flex: 1 1 200px;
 }
 
 input {
@@ -111,6 +162,21 @@ button {
   background: var(--primary);
   color: #ffffff;
   cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 button:disabled {
@@ -230,9 +296,139 @@ tbody th {
   font-weight: 600;
 }
 
-.time-left {
-  font-size: 1.5rem;
+.countdown {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 6px;
+  text-align: center;
+  color: var(--primary);
+  background: var(--primary-surface);
+}
+
+.countdown-warning {
+  color: var(--warning);
+  background: var(--warning-surface);
+}
+
+.countdown-urgent {
+  color: var(--danger);
+  background: var(--danger-surface);
+}
+
+.countdown-label,
+.countdown-note {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.countdown-time {
+  margin: 2px 0 4px;
+  font-size: 2.75rem;
+  font-weight: 700;
+  line-height: 1.15;
   font-variant-numeric: tabular-nums;
+}
+
+.running-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  color: var(--primary);
+  background: var(--primary-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.running-banner-warning {
+  color: var(--warning);
+  background: var(--warning-surface);
+}
+
+.running-banner-urgent {
+  color: var(--danger);
+  background: var(--danger-surface);
+}
+
+.running-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 16px;
+}
+
+.running-banner strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.running-banner a {
+  flex: none;
+  border-color: currentColor;
+  color: inherit;
+  font-weight: 600;
+}
+
+.text-button {
+  padding: 2px 4px;
+  border: none;
+  background: none;
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.link-button {
+  display: inline-block;
+  padding: 8px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--surface);
+  text-align: center;
+  text-decoration: none;
+}
+
+.link-button:hover {
+  background: var(--primary-surface);
+}
+
+.link-button:active {
+  transform: translateY(1px);
+}
+
+.link-button-success {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.link-button-success:hover {
+  background: var(--success-surface);
+}
+
+.free-seats {
+  font-weight: 600;
+}
+
+.free-seats-plenty {
+  color: var(--success);
+}
+
+.free-seats-few {
+  color: var(--warning);
+}
+
+.free-seats-none {
+  color: var(--danger);
+}
+
+.few-seats-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--warning);
+  background: var(--warning-surface);
 }
 
 .status-line {
@@ -296,8 +492,10 @@ button.button-secondary:disabled {
 
   table,
   tbody,
+  tfoot,
   tr,
   tbody th,
+  tfoot th,
   td {
     display: block;
   }
@@ -312,14 +510,27 @@ button.button-secondary:disabled {
   }
 
   tbody th,
+  tfoot th,
   td {
     padding: 0;
     border-bottom: none;
     white-space: normal;
   }
 
-  tbody th {
+  tbody th,
+  tfoot th {
     margin-bottom: 6px;
+  }
+
+  tfoot tr {
+    background: var(--background);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  tfoot th,
+  tfoot td {
+    border-top: none;
   }
 
   td[data-label] {
@@ -334,6 +545,18 @@ button.button-secondary:disabled {
 
   .row-action {
     margin-top: 10px;
+  }
+
+  .row-action button,
+  .row-action .link-button,
+  .actions button {
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  .text-button {
+    padding: 8px 6px;
   }
 }
 

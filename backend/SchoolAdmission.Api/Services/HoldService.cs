@@ -28,16 +28,10 @@ public enum HoldActionOutcome
     Confirmed,
 }
 
-public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions, HoldWriteGate writeGate)
+public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions, ApplicationGate applicationGate)
 {
     public Task<ApplyResult> ApplyAsync(Guid classId, string studentId, CancellationToken cancellationToken) =>
-        writeGate.RunAsync(() => ApplyUnderGateAsync(classId, studentId, cancellationToken), cancellationToken);
-
-    public Task<HoldActionOutcome> ConfirmAsync(Guid holdId, string studentId, CancellationToken cancellationToken) =>
-        writeGate.RunAsync(() => ConfirmUnderGateAsync(holdId, studentId, cancellationToken), cancellationToken);
-
-    public Task<HoldActionOutcome> CancelAsync(Guid holdId, string studentId, CancellationToken cancellationToken) =>
-        writeGate.RunAsync(() => CancelUnderGateAsync(holdId, studentId, cancellationToken), cancellationToken);
+        applicationGate.RunAsync(classId, () => ApplyUnderGateAsync(classId, studentId, cancellationToken), cancellationToken);
 
     private async Task<ApplyResult> ApplyUnderGateAsync(Guid classId, string studentId, CancellationToken cancellationToken)
     {
@@ -110,7 +104,7 @@ public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions, Hol
         return new ApplyResult(ApplyOutcome.Created, holdId, expiresAt[0]);
     }
 
-    private async Task<HoldActionOutcome> ConfirmUnderGateAsync(Guid holdId, string studentId, CancellationToken cancellationToken)
+    public async Task<HoldActionOutcome> ConfirmAsync(Guid holdId, string studentId, CancellationToken cancellationToken)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -146,7 +140,7 @@ public class HoldService(AppDbContext db, IOptions<HoldOptions> holdOptions, Hol
         }
     }
 
-    private async Task<HoldActionOutcome> CancelUnderGateAsync(Guid holdId, string studentId, CancellationToken cancellationToken)
+    public async Task<HoldActionOutcome> CancelAsync(Guid holdId, string studentId, CancellationToken cancellationToken)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
